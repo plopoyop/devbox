@@ -1013,6 +1013,14 @@ func (d *Devbox) configEnvs(
 				}
 			}
 		}
+	} else if d.cfg.Root.IsSopsEnabled() {
+		sopsEnvs, err := d.sopsDecrypt(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range sopsEnvs {
+			env[k] = v
+		}
 	} else if d.cfg.Root.IsdotEnvEnabled() {
 		// if env_from points to a .env file, parse and add it
 		parsedEnvs, err := d.cfg.Root.ParseEnvsFromDotEnv()
@@ -1030,7 +1038,7 @@ func (d *Devbox) configEnvs(
 		}
 	} else if d.cfg.Root.EnvFrom != "" {
 		return nil, usererr.New(
-			"unknown env_from value: %s. Supported values are: \"%q\" or a path to a file ending in \".env\"",
+			"unknown env_from value: %s. Supported values are: %q, a path to a file ending in \".env\", or \"sops:<path>\" for SOPS-encrypted files",
 			d.cfg.Root.EnvFrom,
 			configfile.JetifyCloudEnvFromValue,
 		)

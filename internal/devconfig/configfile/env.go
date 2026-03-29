@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/hashicorp/go-envparse"
 )
@@ -43,6 +44,18 @@ func (c *ConfigFile) ParseEnvsFromDotEnv() (map[string]string, error) {
 	}
 
 	return envMap, nil
+}
+
+func (c *ConfigFile) IsSopsEnabled() bool {
+	return strings.HasPrefix(c.EnvFrom, "sops:")
+}
+
+func (c *ConfigFile) SopsFilePath() string {
+	path := strings.TrimPrefix(c.EnvFrom, "sops:")
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(filepath.Dir(c.AbsRootPath), path)
+	}
+	return path
 }
 
 func (c *ConfigFile) SetEnv(env map[string]string) {

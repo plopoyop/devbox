@@ -1,0 +1,42 @@
+# Tests for env_from with sops: prefix.
+
+# Setup: make mock sops binary executable.
+[!exec:chmod] skip
+exec chmod +x $WORK/bin/sops
+env PATH=$WORK/bin:$PATH
+
+# Test 1: SOPS-decrypted JSON variables are available in devbox run.
+exec devbox run test_db
+stdout 'secret123'
+
+# Test 2: SOPS-decrypted variable for PORT (numeric value).
+exec devbox run test_port
+stdout '5432'
+
+# Test 3: devbox.json env overrides SOPS values.
+exec devbox run test_override
+stdout 'overridden'
+
+-- bin/sops --
+#!/bin/sh
+# Mock sops binary that outputs known JSON for any decrypt call.
+echo '{"DB_PASSWORD":"secret123","API_KEY":"abc","PORT":5432,"OVERRIDE_ME":"from_sops"}'
+
+-- devbox.json --
+{
+  "packages": [],
+  "env": {
+    "OVERRIDE_ME": "overridden"
+  },
+  "shell": {
+    "scripts": {
+      "test_db": "echo $DB_PASSWORD",
+      "test_port": "echo $PORT",
+      "test_override": "echo $OVERRIDE_ME"
+    }
+  },
+  "env_from": "sops:secrets.enc.json"
+}
+
+-- secrets.enc.json --
+{}
